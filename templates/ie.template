@@ -1,0 +1,25 @@
+
+{{define "root_template"}}
+
+	package generated
+	//lint:file-ignore U1000 Ignore all unused code, it's generated
+
+type IeType uint16
+
+		{{range . }}
+		{{template "line_template" .}}
+		{{end}}
+
+{{end}}
+
+{{define "line_template"}}
+
+	const Tc_{{.TypeName}} = {{.TypeCode}}
+
+	type T_{{.TypeName}} struct {
+		bytes []byte
+	}
+    func (T_{{.TypeName}}) TypeCode() IeType {
+        return {{.TypeCode}}
+    }
+{{end}}

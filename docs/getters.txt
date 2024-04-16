@@ -1,0 +1,59 @@
+getters
+
+getters take a spec and return a get result, the get result is either success, with the item requested, or a failure.
+Either can be passed back to another getter, so getters can be chained.
+The principle getters are:
+ - get(tc) - will only work for unique elements
+ - get(tc,id) - will only work for potentially non-unique elements
+ - get(tc,p) [p is a predicate on nodes]
+ An important point is that getters can return failures, so calling getters can fail gracefully too.
+
+ Example:
+ node.get(PDR,27).get(FAR_ID)
+
+ The canonical get requirements are to find a particular PDR, and to find the related FAR:
+ for a PDR, the source interface is in PDI.SOURCE_INTERFACE, so a predicate on a PDR is:
+ node.get(PDI).get(SOURCE_INTERFACE) == SOURCE_INTERFACE_ACCESS
+ and the pdr can be got with:
+
+   pdr := node.get(PDR,(get(PDI).get(SOURCE_INTERFACE).value() == SOURCE_INTERFACE_ACCESS))
+
+ the far id is pdr.get(FAR_ID), the far is node.get(FAR,pdr.get(FAR_ID)).
+
+ Note - there is no error checking explicit here, but, errors, if any will propagate.
+ You can check for errors in multiple results in a single check: func [node] errors() error
+ Uniqueness - get demands uniqueness, if the requirement is getFirst, use it.  Gets will get all matching (and fail if it makes no sense.)
+ Gets can return a reduced node which matches only the predicate.
+
+ IDs are special - using a get return value in getId forces to check and extract the valid ID from the leaf node.
+
+ Leaves and branches are different - only a leaf will return its payload as bytes,
+  and get on a leaf always fails (the leaf can be parsed, but not used as a path to child nodes).
+ If a get fails because its target is a failure, it adds its error context to the existing error.
+ When get fails, it can tell whether it is because the message is invalid, or simply incomplete.
+ A get variant can indicate whether the get is defined as mandatory for the context.
+ So an eventual failure can be ignored by casting to a pointer, if is is simply a missing optional IE.
+
+ A complete simple parse of a SER follows:  note - the only required error check is at the end of getting phase!
+
+Question: how to encode getting every e.g. PDR, and then apply the 'id' function to it?
+Answer: you can write a getter for multiple nodes, which can safely return an empty slice,and thus has no error potential.
+But, in order to chain, it still needs a get context, and so cannot be used as a plain slice, to be ranged over.
+But, .... getN must consume a Get value, so must produce a Get value, to propagate the error.
+The solution for most cases is to express the desired criterion to reduce options to one, using a predicate.
+A predicate has type signature ieNode -> bool
+ node slices as nodes - getN may return a multiple
+
+===============================================
+
+Design
+------
+
+A get node wraps a PFCP parse tree node and a result, where the result is empty if the PFCP node is valid.
+The get method on a node returns just one of the two.  The return can be a leaf or branch node.
+A get can also be applied to any PFCP node container,message or group IE.
+
+Comment
+-------
+
+The 'getter' looks a lot like a monad.  This is no accident.  Go is not the best suited language to writing parsers. Even Rust does it better.

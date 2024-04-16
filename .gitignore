@@ -1,0 +1,9 @@
+merge
+parser
+pcap
+getter
+generated/
+go.sum
+testcases/merged.bin
+bin/
+merged.bin

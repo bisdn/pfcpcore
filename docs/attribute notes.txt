@@ -1,0 +1,41 @@
+
+validation and accessibility parsing are implemented using maps as keys for type codes or type code / ID tuples.
+This system does not preserve order in structures and so reserialisation may not return byte-for-byte equivalent outcomes.
+An alternate form could use the same logic including key/values, but put the k/v in a slice for reconstitution.
+This 'works' for simple single messages but fails for the merge case where there may be no natural order.
+A more subtle issue is that the method is also not guaranteed to produce the same outcome even for the same inputs,
+ if the hash method is non-deterministic.
+It is possible to construct an equality tester for serialised forms without using the key based logic.
+This leaves a remaining question, which is whether reordered and inconsistently ordered messages are an issue.
+Since the reserialisation is done for reasons which in present uses cases will not produce messages for use outside the system,
+ the impact of reordering or inconsistent ordering is considered low.
+An additional spin can be to define a reordering serialiser, which can be used e.g. to enhance unit tests or other inspection cases.
+The reordering serialiser can also be used to implement an equality tester.
+
+Golang map usage
+The parse tree replaces '[]ieClass' with 'map [IeTypeCode,ieID]ieClass', where 'ieID' is a new 16 bit type.
+As the message is traversed the key, including ieID, is written post processing of the grouped IE value.
+So, the grouped IE value parser has to extract the ID when it is detected, or fail in some way when it is not.
+
+Validation map usage
+The validation attributes for a grouped IE are required, permitted and permitted multiple.
+The validation check for 'permitted' and 'permitted multiple', can be done in line.
+The validation check for 'required' can only be completed after entire grouped IE is processed.
+General approach: for every scanned IE locate by type code in the static map for this parent IE.
+The map returns the attribute set for the IE in the context, or fail if not permitted.
+The attribute set drives the validation action:
+ - for required IEs, put the IE type code in a map/set.
+ - for permitted single IEs, put the IE type code in a map/set, failing when already present.
+ - for permitted multiple IEs, do nothing
+Note - the additional attribute, 'associated ID', where present, will trigger parsing and storing the ID when needed for later use.
+Because an existing entry implies permission, the actual values are just two boolean values, 'required' and 'unique', and a optional type code for related ID.
+
+Actions before starting the scan:
+ - initialise an empty 'required' set
+
+Actions on completing the scan:
+ - review the 'required' set for all values needed (can be a count)
+
+ . check for 'permitted'  - use a static map initialised with permitted IE type codes, and a dynamic map initialised empty
+                          - the multiple use is detected on inserting
+ . check for 'permitted multiple' - use a static map initialised with permitted IE type codes,

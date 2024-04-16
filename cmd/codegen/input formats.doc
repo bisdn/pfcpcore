@@ -1,0 +1,10 @@
+'PFCP IEs' is plain line delimited text with two fields per line
+The first field is a number, followed by whitespace (TAB/09).
+The remaining text on the line is free format, printable or whitespace only.
+The first task is build the list of number+string tuples from a file.
+
+The second task is to mangle the remaining text (IE name), into a valid golang identifier,
+with a clear relation to the input text.
+The format considered is the deletion of all non 'letter' characters (a-zA-Z0-9_),
+and the setting of upper/lower case on a simple rule: contiguous substr5ings are Capitalised.
+
